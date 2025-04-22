@@ -50,6 +50,13 @@ private:
     void releaseTempBuffers();
 };
 
+    /**
+     * Constructs a new instance of the SIMDMaximalCliqueFinder class.
+     *
+     * Allocate buffers for the Bron-Kerbosch algorithm.
+     *
+     * @see allocateAllBuffers()
+     */
 SIMDMaximalCliqueFinder::SIMDMaximalCliqueFinder() {
     allocateAlignedMemory((void**)&poolBase, 32, sizeof(int) * PACK_NODE_POOL_SIZE);
     allocateAlignedMemory((void**)&poolState, 32, sizeof(PackState) * PACK_NODE_POOL_SIZE);
@@ -68,6 +75,22 @@ SIMDMaximalCliqueFinder::~SIMDMaximalCliqueFinder() {
     free(poolState);
     free(poolMC);
 }
+
+/**
+ * @brief Constructs an adjacency list from the given edge list.
+ *
+ * This function processes the input edge list to build an adjacency list
+ * representation of the graph. It eliminates self-loops, sorts the edges,
+ * and removes duplicates. It calculates the number of vertices and edges,
+ * and initializes data structures to store adjacency information.
+ *
+ * The adjacency list is stored in a compressed format using base and state arrays
+ * to efficiently manage vertex connections. The function tracks the original degree
+ * of vertices and utilizes packed bit manipulation for space efficiency.
+ *
+ * @param edgeListInput The input edge list, where each edge is a pair of integers
+ *                      representing the source and destination vertices.
+ */
 
 void SIMDMaximalCliqueFinder::constructAdjacencyListFromEdges(const EdgeVector& edgeListInput) {
     edges.reserve(edgeListInput.size());
@@ -135,6 +158,15 @@ void SIMDMaximalCliqueFinder::constructAdjacencyListFromEdges(const EdgeVector& 
     printf("Compression Ratio: %d/%lld = %.4f\n", currentIndex + 1, edgeCount, (double)(currentIndex + 1) / edgeCount);
 }
 
+/**
+ * @brief Allocates temporary buffers for the Bron-Kerbosch algorithm.
+ *
+ * These buffers are used by the Bron-Kerbosch algorithm to store the
+ * intermediate results of the search. The memory allocated here is
+ * released by the releaseTempBuffers() function.
+ *
+ * @see releaseTempBuffers()
+ */
 void SIMDMaximalCliqueFinder::allocateAllBuffers() {
     allocateAlignedMemory((void**)&setsBase, 32, sizeof(int) * PACK_NODE_POOL_SIZE);
     allocateAlignedMemory((void**)&setsState, 32, sizeof(PackState) * PACK_NODE_POOL_SIZE);
@@ -145,11 +177,38 @@ void SIMDMaximalCliqueFinder::allocateAllBuffers() {
 
 }
 
+    /**
+     * Releases the temporary buffers allocated for the Bron-Kerbosch algorithm.
+     *
+     * This function is called after the Bron-Kerbosch algorithm has finished running. It frees the
+     * memory allocated for the temporary buffers used by the algorithm.
+     */
 void SIMDMaximalCliqueFinder::releaseTempBuffers() {
     free(setsBase);
     free(setsState);
 }
 
+    /**
+     * \brief Runs the Bron-Kerbosch algorithm to enumerate all maximal cliques in the graph.
+     *
+     * This function allocates temporary buffers for the algorithm, runs the algorithm, and then
+     * releases the temporary buffers. It tracks the largest clique size encountered and the total
+     * number of maximal cliques found. The function returns the total number of maximal cliques
+     * found.
+     *
+     * The algorithm uses a variant of the Bron-Kerbosch algorithm with a degeneracy ordering
+     * optimization. It starts with an empty current clique and iterates over each vertex in the
+     * graph, in the order of the degeneracy ordering. For each vertex, it explores all maximal
+     * cliques that contain it by recursively calling the `enumerateCliques` function.
+     *
+     * The `enumerateCliques` function takes a current clique, a set of candidates, and a set of
+     * excluded vertices as input. It modifies the current clique by exploring candidate vertices
+     * and excluding already visited vertices. It updates internal buffers to store found cliques
+     * and tracks the largest clique size encountered.
+     *
+     * The function returns the total number of maximal cliques found, and sets the
+     * \p largestCliqueSize member variable to the size of the largest clique found.
+     */
 int SIMDMaximalCliqueFinder::runDegeneracyOrderedSearch() {
     allocateAllBuffers();
 
@@ -240,6 +299,16 @@ int SIMDMaximalCliqueFinder::runDegeneracyOrderedSearch() {
     return cliqueCount;
 }
 
+    /**
+     * Recursively enumerates all maximal cliques in the graph using a variant of the Bron-Kerbosch algorithm.
+     *
+     * This function modifies the current clique by exploring candidate vertices and excluding already visited vertices.
+     * It updates internal buffers to store found cliques and tracks the largest clique size encountered.
+     *
+     * @param currentClique A reference to the current clique being explored.
+     * @param candidates A set of vertices that can potentially expand the current clique.
+     * @param excluded A set of vertices that should not be included in the current clique.
+     */
 void SIMDMaximalCliqueFinder::enumerateCliques(std::vector<int>& currentClique, PackedVertexSet candidates, PackedVertexSet excluded) {
     constexpr int MAX_CLIQUE_DEPTH = 9;
     if (static_cast<int>(currentClique.size()) >= MAX_CLIQUE_DEPTH)
@@ -358,6 +427,16 @@ void SIMDMaximalCliqueFinder::enumerateCliques(std::vector<int>& currentClique, 
     currentClique.pop_back();
 }
 
+/**
+ * Writes the results of the maximal cliques found to a specified file.
+ *
+ * Each clique is written on a separate line, with vertices separated by spaces.
+ * A newline character is used to denote the end of a clique.
+ *
+ * @param filePath The path to the file where the results will be written.
+ *
+ * If the file cannot be opened for writing, an error message is printed to standard error.
+ */
 void SIMDMaximalCliqueFinder::writeCliqueResultsToFile(const char* filePath) {
     std::ofstream outFile(filePath);
     if (!outFile) {

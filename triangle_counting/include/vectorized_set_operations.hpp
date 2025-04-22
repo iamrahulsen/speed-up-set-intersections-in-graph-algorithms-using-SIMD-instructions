@@ -17,6 +17,24 @@ public:
 
     VectorizedSetOps();
 
+/**
+ * Computes the intersection of two sets of integers with associated bit states using SIMD instructions.
+ * This function utilizes SIMD operations to efficiently find and count intersecting elements between
+ * the two sets, leveraging bit-packed states for each integer to determine valid intersections.
+ *
+ * The function processes the sets in chunks of four elements, using prefetching to optimize cache usage
+ * and minimize latency. It computes byte-level matches, applies shuffle operations, and checks for valid
+ * state intersections to accumulate the total count of intersecting elements.
+ *
+ * @param a_base Pointer to the base addresses of the first set of integers.
+ * @param a_state Pointer to the bit-packed states associated with the first set of integers.
+ * @param a_size The number of elements in the first set.
+ * @param b_base Pointer to the base addresses of the second set of integers.
+ * @param b_state Pointer to the bit-packed states associated with the second set of integers.
+ * @param b_size The number of elements in the second set.
+ * @return The count of intersecting elements between the two sets, considering both integer values and bit states.
+ */
+
     int bitpacked_simd_intersection(int *a_base, PackState *a_state, int a_size,
                                     int *b_base, PackState *b_state, int b_size)
     {
@@ -167,11 +185,48 @@ inline __m128i VectorizedSetOps::generate_full_mask()
     return _mm_xor_si128(_mm_setzero_si128(), _mm_cmpeq_epi32(_mm_setzero_si128(), _mm_setzero_si128()));
 }
 
+/**
+ * @brief Generates a zero vector using SIMD operations.
+ *
+ * This function creates a 128-bit zero vector by performing an XOR operation
+ * on two identical vectors filled with zeros. It utilizes the `_mm_set1_epi32`
+ * and `_mm_xor_si128` intrinsics to achieve this, returning a vector suitable
+ * for SIMD operations requiring a zeroed-out state.
+ *
+ * @return A 128-bit SIMD vector with all bits set to zero.
+ */
+
+/**
+ * @brief Generates a zero vector using SIMD operations.
+ *
+ * This function creates a 128-bit zero vector by performing an XOR operation
+ * on two identical vectors filled with zeros. It utilizes the `_mm_set1_epi32`
+ * and `_mm_xor_si128` intrinsics to achieve this, returning a vector suitable
+ * for SIMD operations requiring a zeroed-out state.
+ *
+ * @return A 128-bit SIMD vector with all bits set to zero.
+ */
 inline __m128i VectorizedSetOps::generate_zero_vector()
 {
     return _mm_xor_si128(_mm_set1_epi32(0), _mm_set1_epi32(0));
 }
 
+    /**
+     * @brief Generates a lookup table for shuffling bytes in a SIMD register.
+     *
+     * This function creates a vector of 256 elements, each representing a byte
+     * shuffle pattern. The generated table is used to efficiently shuffle bytes
+     * during match operations. The table is indexed by a combination of 4-bit
+     * values extracted from an 8-bit input, and the value at each index provides
+     * the byte shuffle pattern for that input.
+     *
+     * The table is constructed by iterating over all possible 4-bit values,
+     * and assigning the corresponding shuffle pattern to the table entry
+     * indexed by that value. The shuffle pattern is determined by the least
+     * significant three bits of the index.
+     *
+     * @return A vector of 256 elements, each representing a byte shuffle pattern.
+     */
 inline std::vector<uint8_t> VectorizedSetOps::generate_shuffle_table()
 {
     std::vector<uint8_t> table(256, 255);
@@ -185,6 +240,18 @@ inline std::vector<uint8_t> VectorizedSetOps::generate_shuffle_table()
     return table;
 }
 
+    /**
+     * @brief Generates a lookup table for efficiently determining match patterns.
+     *
+     * This function generates a lookup table of 65536 elements, each indexed by
+     * the result of a byte-wise comparison between two 4-byte integers. The value
+     * at each index is a 6-bit value, with the four least significant bits
+     * representing the match pattern (0, 1, 2, or 3), and the two most
+     * significant bits representing special cases: 00 indicates a multiple
+     * match, 01 indicates no match, and 10 indicates a single match.
+     *
+     * @return A pointer to the lookup table.
+     */
 inline int *VectorizedSetOps::generate_mask_lookup_table()
 {
     int *mask = new int[65536];
@@ -238,6 +305,16 @@ inline int *VectorizedSetOps::generate_mask_lookup_table()
     return mask;
 }
 
+    /**
+     * Generates a shuffle dictionary for vectorized set operations.
+     *
+     * This function generates a lookup table used for shuffling bytes during
+     * vectorized set operations. The table is indexed by a 8-bit value, and the
+     * output is a 4-byte value that contains the shuffled byte indices. The
+     * output is used for SIMD operations that require specific byte alignment.
+     *
+     * @return A pointer to the shuffle dictionary array.
+     */
 inline uint8_t *VectorizedSetOps::generate_shuffle_dict()
 {
     uint8_t *dict = new uint8_t[4096];
@@ -267,6 +344,24 @@ inline uint8_t *VectorizedSetOps::generate_shuffle_dict()
 
     return dict;
 }
+
+/**
+ * @brief Constructs a VectorizedSetOps object and initializes its lookup tables and data structures.
+ *
+ * This constructor initializes various lookup tables and constants necessary for
+ * vectorized set operations using SIMD instructions. It sets up full and zero
+ * masks, shuffle tables for byte reordering, and data for group ordering.
+ *
+ * @details
+ * - `SIMD_FULL_MASK`: A mask representing all bits set to one, used in SIMD operations.
+ * - `SIMD_ZERO_VECTOR`: A vector with all elements set to zero.
+ * - `shuffle_table`: A precomputed table for byte shuffle patterns.
+ * - `byte_mask_lookup_table`: A lookup table used to determine match patterns in byte comparisons.
+ * - `shuffle_pattern_dict`: A dictionary for byte shuffling during vectorized operations.
+ * - `group_a_data` and `group_b_data`: Arrays defining the order of elements in groups
+ *   used for SIMD comparisons.
+ * - `group_a_order` and `group_b_order`: Pointers to the group order data, used in SIMD operations.
+ */
 
 inline VectorizedSetOps::VectorizedSetOps()
     : SIMD_FULL_MASK(generate_full_mask()),

@@ -17,6 +17,29 @@ public:
 
         NodeEntry() : key(-1), prev(-1), next(-1) {}
 
+/**
+ * Constructs a NodeEntry with the specified key, previous node index,
+ * and next node index. Initializes the node's key, prev, and next
+ * fields accordingly. Performs a temporary computation using the
+ * provided parameters, which does not impact the node's state.
+ *
+ * @param _k The key for the node.
+ * @param _p The index of the previous node.
+ * @param _n The index of the next node.
+ */
+
+/**
+ * Constructs a NodeEntry with the specified key, previous node index,
+ * and next node index. Initializes the node's key, prev, and next
+ * fields accordingly. Performs a temporary computation using the
+ * provided parameters, which does not impact the node's state.
+ *
+ * @param _k The key for the node.
+ * @param _p The index of the previous node.
+ * @param _n The index of the next node.
+ */
+
+
         NodeEntry(int _k, int _p, int _n)
         {
             int temp = _k ^ _p;
@@ -33,6 +56,13 @@ public:
     int first_index, last_index;
     int max_size, key_space;
     NodeEntry *entries = NULL;
+    /**
+     * NodeCache constructor. Initializes the node cache with the specified
+     * maximum number of nodes and key space size.
+     *
+     * @param _max_size The maximum number of nodes that the cache can store.
+     * @param _key_space The size of the key space for the cache.
+     */
     NodeCache(int _max_size, int _key_space)
         : max_size(_max_size), key_space(_key_space)
     {
@@ -50,6 +80,11 @@ public:
         last_index = -1;
         node_idx = 0;
     }
+
+/**
+ * Destructor for the NodeCache class. This function releases the memory
+ * allocated for the entries and index_lookup arrays to prevent memory leaks.
+ */
 
     ~NodeCache()
     {
@@ -75,6 +110,12 @@ public:
         index_lookup[key] = -1;
     }
 
+    /**
+     * Removes the node at the front of the cache (i.e., the node with the lowest
+     * index) and returns its key. If the cache is empty, returns -1.
+     *
+     * @return The key of the evicted node, or -1 if the cache is empty.
+     */
     int evict_front()
     {
         if (first_index == -1)
@@ -90,6 +131,15 @@ public:
         index_lookup[cur_node.key] = -1;
         return cur_node.key;
     }
+    /**
+     * Adds a node to the cache. If the node is already in the cache, then
+     * the function simply returns. Otherwise, the function allocates a new
+     * slot in the cache, and updates the node's key, prev, and next fields
+     * accordingly. The function also updates the first_index and last_index
+     * variables to point to the newly added node.
+     *
+     * @param key The key for the node to be added to the cache.
+     */
     void cache_node(int key)
     {
         switch (index_lookup[key] != -1)

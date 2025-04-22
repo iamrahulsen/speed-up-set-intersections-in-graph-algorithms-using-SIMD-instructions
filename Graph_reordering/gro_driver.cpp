@@ -10,6 +10,18 @@
 
 LayoutOptimizer optimizer;
 
+/**
+ * @brief The main entry point for the graph reordering driver.
+ *
+ * This executable takes a single command line argument specifying the path to
+ * the input graph file. The graph is then loaded and reordering is performed
+ * using the specified algorithm. The output is written to a file with the same
+ * name as the input, but with a `_layout.txt` suffix.
+ *
+ * @param argc The number of command line arguments.
+ * @param argv The command line arguments.
+ * @return The exit status of the program.
+ */
 int main(int argc, char *argv[])
 {
     if (argc < 2)
@@ -75,7 +87,6 @@ int main(int argc, char *argv[])
     parse_v:
         ++ptr;
 
-        // Parse 'v'
         switch (1)
         {
         case 1:

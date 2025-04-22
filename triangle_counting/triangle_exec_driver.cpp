@@ -11,6 +11,19 @@ using namespace std::chrono;
 
 SIMDTriangleAnalyzer analyzer;
 
+/**
+ * @brief Main entry point for triangle counting program.
+ *
+ * @param argc The number of command line arguments.
+ * @param argv An array of character pointers to the command line arguments.
+ *
+ * This program takes a single command line argument, an edge list file path.
+ * The program reads the edge list from the file, builds an internal graph
+ * representation, and counts the number of triangles in the graph using
+ * the Triangle Counting algorithm.
+ *
+ * @return 0 on success, non-zero on failure.
+ */
 int main(int argc, char *argv[])
 {
     if (argc < 2)

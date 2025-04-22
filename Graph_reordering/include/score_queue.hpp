@@ -25,6 +25,16 @@ public:
 
         QueueNode() : state(0), val(0), prev(-1), next(-1) {}
 
+        /**
+         * Constructs a QueueNode with the specified state, value, previous node
+         * index, and next node index. Initializes the node's state, val, prev,
+         * and next fields accordingly.
+         *
+         * @param s The state for the node.
+         * @param v The value for the node.
+         * @param p The index of the previous node.
+         * @param n The index of the next node.
+         */
         QueueNode(int s, int v, int p, int n)
         {
             state = s;
@@ -40,6 +50,10 @@ public:
         int last;
         int label;
 
+        /**
+         * Default constructor for Bucket. Initializes the first, last, and
+         * label fields to default values: first = -1, last = -1, and label = 0.
+         */
         Bucket()
         {
             first = -1;
@@ -47,6 +61,15 @@ public:
             label = 0;
         }
 
+        /**
+         * Constructs a Bucket with the specified first node index, last node
+         * index, and label. Initializes the first, last, and label fields
+         * accordingly.
+         *
+         * @param f The index of the first node.
+         * @param l The index of the last node.
+         * @param lb The label for the bucket.
+         */
         Bucket(int f, int l, int lb)
         {
             first = f;
@@ -62,6 +85,12 @@ public:
 
         LHUpdateInfo() : key(-1), old_val(0) {}
 
+        /**
+         * Constructs an LHUpdateInfo with the specified key and old value.
+         *
+         * @param k The key for the update.
+         * @param ov The old value for the update.
+         */
         LHUpdateInfo(int k, int ov)
         {
             key = k;
@@ -73,6 +102,21 @@ public:
     Bucket *buckets;
     LHUpdateInfo *pending_updates;
     int active_count = 0;
+/**
+ * Constructor for the ScoreQueue class.
+ *
+ * Initializes a score-based priority queue with a specified maximum number
+ * of nodes. The constructor allocates memory for the internal data structures
+ * such as the linked list of QueueNodes, an array of Buckets, and an array
+ * of pending updates (LHUpdateInfo). Memory allocation uses aligned memory 
+ * to optimize performance, and if allocation fails, the program will terminate 
+ * with an error message. The active_count is set to the maximum number of nodes,
+ * and the linked list and buckets are initialized. The first and last nodes
+ * as well as other internal tracking variables are set for the queue's operation.
+ *
+ * @param _max_nodes The maximum number of nodes the queue can handle.
+ */
+
     ScoreQueue(int _max_nodes)
     {
         max_nodes = _max_nodes;
@@ -132,6 +176,24 @@ public:
         update_index = 0;
     }
 
+    /**
+     * Destructor for the ScoreQueue class.
+     *
+     * This destructor releases the dynamically allocated memory for the
+     * internal data structures of the ScoreQueue, including the linked list
+     * of QueueNodes, the array of Buckets, and the array of pending updates
+     * (LHUpdateInfo). It ensures that all resources are properly freed to
+     * prevent memory leaks.
+     */
+
+    /**
+     * Destructor for the ScoreQueue class.
+     *
+     * Releases the dynamically allocated memory for the internal data
+     * structures of the ScoreQueue, including the linked list of QueueNodes,
+     * the array of Buckets, and the array of pending updates (LHUpdateInfo).
+     * Ensures that all resources are properly freed to prevent memory leaks.
+     */
     ~ScoreQueue()
     {
         free(linkedlist);
@@ -139,6 +201,16 @@ public:
         free(pending_updates);
     }
 
+    /**
+     * Increases the score of a node in the priority queue.
+     *
+     * This method increases the score of the node at the specified key by
+     * one. If the node is already marked for update, the new score is
+     * recorded for later propagation. If the node is not marked for update,
+     * the new score is recorded and the node is marked for update.
+     *
+     * @param key The key of the node to update.
+     */
     void increase_score(int key)
     {
         QueueNode &cur_node = linkedlist[key];
@@ -161,6 +233,17 @@ public:
                void())
             : void();
     }
+    /**
+     * Extracts the best node from the priority queue.
+     *
+     * This method returns the key of the node with the highest score in the
+     * priority queue. The node is removed from the queue, and the score of the
+     * node is reset to -1. If the queue is empty, the method returns -1. The
+     * method also periodically shuffles the queue to avoid starvation.
+     *
+     * @return The key of the node with the highest score in the priority queue,
+     * or -1 if the queue is empty.
+     */
     int extract_best()
     {
         apply_score_changes();
@@ -199,6 +282,34 @@ public:
         active_count--;
         return key;
     }
+
+    /**
+     * Removes a node from the priority queue.
+     *
+     * This method removes the node identified by the given key from the
+     * priority queue. It first applies any pending score changes, then
+     * checks if the node is already marked as removed. If not, it proceeds
+     * to update the doubly-linked list and the bucket structure to reflect
+     * the removal, adjusting the first and last pointers as necessary.
+     * The node's score is set to -1 to mark it as removed, and the active
+     * count of nodes in the queue is decremented.
+     *
+     * @param key The key of the node to be removed from the queue.
+     */
+
+    /**
+     * Removes a node from the priority queue.
+     *
+     * This method removes the node identified by the given key from the
+     * priority queue. It first applies any pending score changes, then
+     * checks if the node is already marked as removed. If not, it proceeds
+     * to update the doubly-linked list and the bucket structure to reflect
+     * the removal, adjusting the first and last pointers as necessary.
+     * The node's score is set to -1 to mark it as removed, and the active
+     * count of nodes in the queue is decremented.
+     *
+     * @param key The key of the node to be removed from the queue.
+     */
 
     void remove_node(int key)
     {
@@ -248,6 +359,14 @@ public:
         active_count--;
     }
 
+/**
+ * Clears the scores of all nodes in the priority queue.
+ *
+ * This method increments the reset label, effectively marking all nodes
+ * for reset. The update index is set to zero, and the first bucket is
+ * initialized with the current first and last nodes and the new reset label.
+ */
+
     void clear_scores()
     {
         reset_label++;
@@ -255,10 +374,27 @@ public:
         buckets[0] = Bucket(first_node, last_node, reset_label);
     }
 
+    /**
+     * Returns true if the node with the specified key is active (i.e., it has
+     * a score of 0 or greater), and false otherwise.
+     *
+     * @param key The key of the node to check.
+     * @return True if the node is active, false otherwise.
+     */
     bool is_active(int key)
     {
         return linkedlist[key].val != -1;
     }
+    /**
+     * Applies all pending score updates to the ScoreQueue.
+     *
+     * This method iterates over all pending updates stored in the
+     * `pending_updates` array and applies each update to the corresponding
+     * node by adjusting its position in the bucket structure. Once all updates
+     * are applied, the update index is reset to zero, indicating that there
+     * are no more pending updates to process.
+     */
+
     void apply_score_changes()
     {
         int i = 0;
@@ -271,6 +407,7 @@ public:
         }
         update_index = 0;
     }
+
 
     void update_bucket_position(int key, int old_val)
     {
@@ -426,12 +563,34 @@ public:
         cur_node.state -= UPDATE_LABEL_MASK;
     }
 
+        /**
+         * Peeks the score of the node at the front of the queue.
+         *
+         * This method returns the score of the node at the front of the queue
+         * without removing it from the queue. If the queue is empty, the
+         * method returns -1.
+         *
+         * @return The score of the node at the front of the queue, or -1 if the
+         * queue is empty.
+         */
     int peek_score()
     {
         apply_score_changes();
         return (linkedlist[first_node].state != reset_label) ? 0 : linkedlist[first_node].val;
     }
 
+
+        /**
+         * Checks the integrity of the priority queue.
+         *
+         * This method checks the consistency of the priority queue. It checks
+         * that the queue is sorted in descending order of scores, and that the
+         * number of nodes in the queue is equal to `active_count`. If the
+         * queue is empty, the method returns true. If the queue is invalid,
+         * the method prints debug information and returns false.
+         *
+         * @return true if the queue is valid, false otherwise.
+         */
     bool validate_state()
     {
         if (first_node == -1)
@@ -492,6 +651,17 @@ public:
         return flag;
     }
 
+/**
+ * Verifies the integrity of the linked list by counting the number of nodes
+ * and ensuring it matches the expected active count. The function iterates
+ * over the linked list starting from the first node, incrementing a counter
+ * for each node encountered. If at any point the counter exceeds the active
+ * count, the verification fails. After traversal, the function checks if the
+ * counter equals the active count, printing diagnostic messages if any
+ * discrepancies are found. Returns true if the verification is successful;
+ * false otherwise.
+ */
+
     bool verify_count()
     {
         bool flag = true;
@@ -528,6 +698,7 @@ public:
 
         return flag;
     }
+
     bool is_top_zero()
     {
         apply_score_changes();

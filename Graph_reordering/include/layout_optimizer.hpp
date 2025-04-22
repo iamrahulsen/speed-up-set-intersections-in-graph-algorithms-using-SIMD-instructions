@@ -17,7 +17,7 @@
 class LayoutOptimizer
 {
 public:
-    // === Type definitions ===
+
     typedef int PackBase;
     typedef int PackState;
 
@@ -53,6 +53,11 @@ public:
     int *position_map;
     float *out_weights, *in_weights;
 
+    /**
+     * Constructor for LayoutOptimizer. Initializes the data members as
+     * follows: node_count = 0, link_count = 0, group_count = 0,
+     * position_map = NULL, out_weights = NULL, in_weights = NULL.
+     */
     LayoutOptimizer()
     {
         node_count = 0;
@@ -63,6 +68,10 @@ public:
         in_weights = NULL;
     }
 
+    /**
+     * Destructor for LayoutOptimizer. Frees the memory allocated for
+     * position_map, out_weights, and in_weights if they are not NULL.
+     */
     ~LayoutOptimizer()
     {
         switch (position_map != nullptr)
@@ -87,6 +96,18 @@ public:
         }
     }
 
+    /**
+     * Initializes the data structure required for layout optimization.
+     * This function first initializes the member variables with the
+     * given connection list. It then initializes the position_map,
+     * out_weights, and in_weights arrays with the size of node_count.
+     * It also initializes the remap_indices array with the size of
+     * node_count. Finally, it calls the prepare_topology() method
+     * to fill in the topology, forward_refs, and backward_refs arrays.
+     *
+     * @param[in] _e_v Connection list, which is a vector of pairs of
+     * node IDs.
+     */
     void initialize_structure(ConnectionList _e_v)
     {
         this->connection_list = _e_v;
@@ -127,6 +148,18 @@ public:
         prepare_topology();
     }
 
+    /**
+     * Performs graph layout optimization.
+     *
+     * This function takes a connection list and performs the layout
+     * optimization based on the greedy heuristic. It first initializes
+     * the data structures required for the optimization. Then it
+     * iterates over the sorted nodes and assigns a position to each
+     * node based on its degree. Finally, it updates the remap_indices
+     * array and the connection list with the new positions.
+     *
+     * @return The optimized connection list.
+     */
     ConnectionList optimize_layout()
     {
         memset(position_map, -1, sizeof(int) * node_count);
@@ -280,6 +313,15 @@ public:
         return connection_list;
     }
 
+    /**
+     * Evaluate the compaction of the graph using the formula:
+     * \f$ \frac{1}{2} \left( \frac{ \sum_{i=1}^{n} \sqrt{d_i^{out}} }{2 \sum_{i=1}^{n} d_i^{out}} + \frac{ \sum_{i=1}^{n} \sqrt{d_i^{in}} }{2 \sum_{i=1}^{n} d_i^{in}} \right) \f$
+     * where \f$ d_i^{out} \f$ and \f$ d_i^{in} \f$ are the out-degree and in-degree of node \f$ i \f$, respectively.
+     *
+     * @param comp_final_out [out] The final compaction score.
+     * @param score_out [out] The score of the graph, which is the sum of the square root of the degrees of all nodes.
+     * @param norm_score_out [out] The normalized score of the graph, which is the sum of the square root of the degrees of all nodes divided by the total number of nodes.
+     */
     void evaluate_compaction(float *comp_final_out, float *score_out, float *norm_score_out)
     {
         prepare_topology();
@@ -379,6 +421,15 @@ public:
         *norm_score_out = norm_score;
     }
 
+    /**
+     * Prepare the topology data structure for layout optimization.
+     *
+     * Sorts the connection list by source node id and then by destination node id.
+     * Sets up the out and in degree fields of the topology for each node.
+     * Computes the out and in start fields of the topology which give the
+     * starting indices of the adjacency lists for each node.
+     * Computes the forward and backward adjacency lists.
+     */
     void prepare_topology()
     {
         std::sort(connection_list.begin(), connection_list.end(),

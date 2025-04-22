@@ -38,13 +38,36 @@ NaiveMaximalCliqueFinder::NaiveMaximalCliqueFinder() {
     allocateAlignedMemory((void**)&cliqueBuffer, 32, sizeof(int) * PACK_NODE_POOL_SIZE);
 }
 
+    /**
+     * Destructor for NaiveMaximalCliqueFinder.
+     *
+     * Releases all heap allocated memory used by the class.
+     */
 NaiveMaximalCliqueFinder::~NaiveMaximalCliqueFinder() {
     free(edgePool);
     free(cliqueBuffer);
 }
 
+
 void NaiveMaximalCliqueFinder::constructAdjacencyListFromEdges(const EdgeVector& edgeListInput) {
-    edges.clear();
+/*************  ✨ Windsurf Command ⭐  *************/
+    /**
+     * @brief Construct adjacency list from the given edge list.
+     *
+     * @param edgeListInput The input edge list.
+     *
+     * This function constructs an adjacency list from the input edge list. It
+     * first filters out self-loops and then sorts the edges in ascending order
+     * of (source, destination) pairs. It then iterates over the sorted edge list
+     * to populate the adjacency list. The adjacency list is a vector of
+     * PackedVertexSet objects, each representing the adjacency list of a vertex.
+     * The start index of each vertex is set to the index of the first edge of the
+     * vertex and the degree of each vertex is set to the number of edges of the
+     * vertex.
+     *
+     * @note The input edge list is not modified.
+     */
+/*******  af491738-2467-4185-809b-ac19f6e608ee  *******/    edges.clear();
     edges.reserve(edgeListInput.size());
 
     for (size_t idx = 0; idx < edgeListInput.size(); ++idx) {
@@ -81,6 +104,17 @@ void NaiveMaximalCliqueFinder::constructAdjacencyListFromEdges(const EdgeVector&
     printf("[INIT] Vertices: %d | Edges: %lld\n", vertexCount, edgeCount);
 }
 
+    /**
+     * Compute the degeneracy ordering of the graph.
+     *
+     * The degeneracy ordering is a permutation of the vertices of the graph such
+     * that for each vertex, its degree in the subgraph induced by the vertices
+     * that come after it in the permutation is at most its degree in the full
+     * graph. The degeneracy ordering is computed using the algorithm of
+     * [Batagelj and Zaversnik, 2003].
+     *
+     * @param[out] order The degeneracy ordering of the graph.
+     */
 void NaiveMaximalCliqueFinder::computeDegeneracyOrdering(std::vector<int>& order) {
     std::vector<int> degreeList(vertexCount);
     std::vector<int> indexAtDegree(vertexCount);
@@ -156,6 +190,25 @@ void NaiveMaximalCliqueFinder::computeDegeneracyOrdering(std::vector<int>& order
 
 }
 
+    /**
+     * \brief Runs the maximal clique enumeration algorithm on the given graph.
+     * 
+     * This function will compute the degeneracy ordering of the graph and then use it to
+     * enumerate all maximal cliques. The degeneracy ordering is a permutation of the
+     * graph vertices that orders them by degree in descending order. The algorithm
+     * works by iterating over each vertex in the graph, in the order of the degeneracy
+     * ordering, and for each vertex, exploring all maximal cliques that contain it.
+     * 
+     * The algorithm uses a stack to keep track of the current clique being explored, and
+     * two arrays of size \f$|V|\f$ to keep track of the visited vertices and the current
+     * set of candidates and excluded vertices.
+     * 
+     * The function returns the total number of maximal cliques found, and sets the
+     * \p largestCliqueSize member variable to the size of the largest clique found.
+     * 
+     * \warning The function allocates two arrays of size \f$|V|\f$ on the heap, and
+     * the user is responsible for freeing them when they are no longer needed.
+     */
 int NaiveMaximalCliqueFinder::runDegeneracyOrderedSearch() {
     allocateAlignedMemory(reinterpret_cast<void**>(&candidatePool), 32, sizeof(int) * PACK_NODE_POOL_SIZE);
     allocateAlignedMemory(reinterpret_cast<void**>(&tempBuffer), 32, sizeof(int) * vertexCount);
@@ -209,6 +262,17 @@ int NaiveMaximalCliqueFinder::runDegeneracyOrderedSearch() {
     free(tempBuffer);
     return totalCliques;
 }
+
+/**
+ * Recursively enumerates all maximal cliques in the graph using a variant of the Bron-Kerbosch algorithm.
+ *
+ * This function modifies the current clique by exploring candidate vertices and excluding already visited vertices.
+ * It updates internal buffers to store found cliques and tracks the largest clique size encountered.
+ *
+ * @param currentClique A reference to the current clique being explored.
+ * @param candidates A set of vertices that can potentially expand the current clique.
+ * @param excluded A set of vertices that should not be included in the current clique.
+ */
 
 void NaiveMaximalCliqueFinder::enumerateCliques(std::vector<int>& currentClique, PackedVertexSet candidates, PackedVertexSet excluded) {
     constexpr int MAX_CLIQUE_DEPTH = 9;
@@ -293,6 +357,17 @@ void NaiveMaximalCliqueFinder::enumerateCliques(std::vector<int>& currentClique,
     currentClique.pop_back();
     
 }
+
+/**
+ * Writes the results of the maximal cliques found to a specified file.
+ *
+ * Each clique is written on a separate line, with vertices separated by spaces.
+ * A newline character is used to denote the end of a clique.
+ *
+ * @param filePath The path to the file where the results will be written.
+ * 
+ * If the file cannot be opened for writing, an error message is printed to standard error.
+ */
 
 void NaiveMaximalCliqueFinder::writeCliqueResultsToFile(const char* filePath) {
     std::ofstream out(filePath);

@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
     // printf("[RESULT] Maximal Cliques: %d\n", cliqueCount);
     // printf("[RESULT] Comparisons: %llu\n", cmp_cnt);
     puts("============================================");
-    puts("🧠 MAXIMAL CLIQUE DETECTION REPORT 🧠");
+    puts("MAXIMAL CLIQUE DETECTION REPORT");
     puts("============================================");
     printf("📄 Graph File       : %s\n", graphFileName.c_str());
 

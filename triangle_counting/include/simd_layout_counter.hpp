@@ -30,12 +30,25 @@ struct CompressedVertexInfo
     int base_index;
     int degree;
 
+    /**
+     * CompressedVertexInfo()
+     * 
+     * Default constructor for CompressedVertexInfo, setting base_index to -1 and degree to 0.
+     */
     CompressedVertexInfo()
     {
         base_index = -1;
         degree = 0;
     }
 
+    /**
+     * CompressedVertexInfo(int _s, int _d)
+     * 
+     * Constructor for CompressedVertexInfo, taking an integer base_index and degree.
+     * 
+     * @param _s The base index of the compressed vertex.
+     * @param _d The degree of the compressed vertex.
+     */
     CompressedVertexInfo(int _s, int _d)
     {
         base_index = _s;
@@ -61,6 +74,12 @@ public:
     int worker_count = 1;
     int *partial_results = NULL;
 
+    /**
+     * Constructor for SIMDTriangleAnalyzer, allocating memory for the compressed graph.
+     * 
+     * Allocates memory for the compressed graph, including the vertex table and the
+     * compressed edge list.
+     */
     SIMDTriangleAnalyzer()
     {
         vertex_count = 0;
@@ -75,6 +94,12 @@ public:
         se += y_var;
     }
 
+    /**
+     * Destructor for SIMDTriangleAnalyzer, freeing all allocated memory.
+     * 
+     * Frees all memory allocated for the compressed graph, including the vertex table
+     * and the compressed edge list. Also frees any memory allocated for partial results.
+     */
     ~SIMDTriangleAnalyzer()
     {
         free(compressed_state);
@@ -82,6 +107,22 @@ public:
         if (partial_results)
             free(partial_results);
     }
+
+    /**
+     * Counts all triangles in the graph using a SIMD-optimized intersection of vertex sets.
+     *
+     * Iterates through each forward edge in the graph and performs a bit-packed SIMD 
+     * intersection on the vertex sets associated with the edge's endpoint vertices. 
+     * Counts the number of triangles formed by the edges and accumulates the total count.
+     *
+     * The function assumes that the compressed graph is represented with vertex tables and 
+     * compressed edge lists, using SIMD instructions for efficient computation. It returns 
+     * a pair consisting of the total number of triangles found and the total number of 
+     * comparisons performed using the SIMD set operations.
+     *
+     * @return A pair with the first element as the total triangle count and the second 
+     *         element as the count of SIMD comparisons performed.
+     */
 
     std::pair<int, unsigned long long> count_all_triangles()
     {
@@ -118,6 +159,22 @@ public:
         return {res, setOps.get_cmp_count()};
     }
 
+    /**
+     * Partial triangle counting function for parallel execution with pthreads.
+     *
+     * Each worker thread is assigned a range of edges to process. The function
+     * iterates through the assigned edges and performs a bit-packed SIMD
+     * intersection on the vertex sets associated with the edge's endpoint
+     * vertices, incrementing the partial result count for the worker thread.
+     *
+     * The function takes a single argument, a pointer to a WorkerInfo struct,
+     * which contains a reference to the SIMDTriangleAnalyzer object, the worker
+     * thread ID, and a pointer to the partial result array.
+     *
+     * @param arg Pointer to a WorkerInfo struct containing the thread-specific
+     *            information.
+     * @return NULL on successful completion.
+     */
     static void *execute_partial_count(void *arg)
     {
         WorkerInfo *data = (WorkerInfo *)arg;
@@ -164,6 +221,29 @@ public:
 
         pthread_exit(NULL);
     }
+
+/**
+ * Initializes the vertex table data from the given input edges.
+ *
+ * This function processes the input edge list to generate forward 
+ * and reverse edge vectors. It reserves space for these vectors 
+ * and iterates over the input edges using a while-loop. Depending 
+ * on the relationship between the vertices of each edge, edges are 
+ * sorted into forward or reverse vectors, or annotated via a dummy 
+ * marker. The function removes duplicate edges, updates the vertex 
+ * count, and resizes the vertex table accordingly.
+ * 
+ * During the process, it uses bit-packing to manage vertex connections 
+ * efficiently, and calculates the compression ratio based on the 
+ * number of packed nodes and edge count.
+ * 
+ * @param[in] input_edges The input edge list, where each edge is a 
+ *                        pair of integers representing the source 
+ *                        and destination vertices.
+ * 
+ * @return A tuple containing the count of packed nodes, total edge 
+ *         count, and the compression ratio.
+ */
 
     std::tuple<int, long long, double> initialize_vertex_table_data(const EdgeListContainer &input_edges)
     {

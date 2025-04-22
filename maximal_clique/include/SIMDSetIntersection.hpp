@@ -6,6 +6,18 @@
 static const __m128i all_zero_si128 = _mm_setzero_si128();
 
 int intersect(int *set_a, int size_a, int *set_b, int size_b, int *set_c);
+/**
+ * Intersect two sorted arrays.
+ *
+ * @param set_a The first sorted array.
+ * @param size_a The size of the first sorted array.
+ * @param set_b The second sorted array.
+ * @param size_b The size of the second sorted array.
+ * @param set_c A pointer to an array of length at least size_a + size_b.
+ *              The intersection of the two arrays will be stored here.
+ *
+ * @returns The size of the intersection.
+ */
 int intersect(int *set_a, int size_a, int *set_b, int size_b, int *set_c)
 {
     int i = 0, j = 0, size_c = 0;
@@ -283,8 +295,38 @@ static const uint8_t shuffle_pi8_array[256] =
 };
 static const __m128i *shuffle_mask = (__m128i*)(shuffle_pi8_array);
 
+/**
+ * Subtract the set of visited nodes from the set of nodes in the input array.
+ *
+ * This function takes in a set of nodes in the input array, and subtracts the
+ * set of visited nodes from it. The result is stored in the output arrays.
+ *
+ * @param bases_a the array of node indices
+ * @param states_a the array of node states
+ * @param size_a the size of the input array
+ * @param visited the array of visited nodes
+ * @param bases_c the output array of node indices
+ * @param states_c the output array of node states
+ *
+ * @return the size of the output array
+ */
 int subtractVisitedSIMD(int* bases_a, PackState* states_a, int size_a,
     PackState* visited, int* bases_c, PackState* states_c);
+/**
+ * Subtract the set of visited nodes from the set of nodes in the input array.
+ *
+ * This function takes in a set of nodes in the input array, and subtracts the
+ * set of visited nodes from it. The result is stored in the output arrays.
+ *
+ * @param bases_a the array of node indices
+ * @param states_a the array of node states
+ * @param size_a the size of the input array
+ * @param visited the array of visited nodes
+ * @param bases_c the output array of node indices
+ * @param states_c the output array of node states
+ *
+ * @return the size of the output array
+ */
     int subtractVisitedSIMD(int* bases_a, PackState* states_a, int size_a,
         PackState* visited, int* bases_c, PackState* states_c)
 {
@@ -320,6 +362,21 @@ while (i < size_a) {
 
 return size_c;    
 }
+/**
+ * Subtract the set of unvisited nodes from the set of nodes in the input array.
+ *
+ * This function takes in a set of nodes in the input array, and subtracts the
+ * set of unvisited nodes from it. The result is stored in the output arrays.
+ *
+ * @param bases_a the array of node indices
+ * @param states_a the array of node states
+ * @param size_a the size of the input array
+ * @param visited the array of visited nodes
+ * @param bases_c the output array of node indices
+ * @param states_c the output array of node states
+ *
+ * @return the size of the output array
+ */
 int subtractUnvisitedSIMD(int* bases_a, PackState* states_a, int size_a,
     PackState* visited, int* bases_c, PackState* states_c);
     int subtractUnvisitedSIMD(int* bases_a, PackState* states_a, int size_a,
@@ -373,6 +430,17 @@ static const uint8_t byte_check_group_b_pi8[64] = {
 };
 static const __m128i *byte_check_group_a_order = (__m128i*)(byte_check_group_a_pi8);
 static const __m128i *byte_check_group_b_order = (__m128i*)(byte_check_group_b_pi8);
+/**
+ * @brief Prepares a lookup table for byte-wise check.
+ *
+ * This function prepares a lookup table for byte-wise check.
+ * The table is indexed by the result of the byte-wise comparison
+ * between two 4-byte integers, and the value at the index is the
+ * number of matches. If the result is 0, it means no match, and if
+ * the result is 4, it means multiple matches.
+ *
+ * @return the lookup table
+ */
 inline int *prepare_byte_check_mask_dict()
 {
     int *mask = new int[65536];
@@ -430,6 +498,22 @@ inline int *prepare_byte_check_mask_dict()
 
     return mask;
 }
+/**
+ * @brief Prepares a shuffle dictionary for match operations.
+ *
+ * This function constructs a dictionary used for efficiently shuffling bytes
+ * during match operations. The dictionary is indexed by a combination of
+ * 4-bit values extracted from an 8-bit input, and the value at each index
+ * provides the byte shuffle pattern for that input.
+ *
+ * The dictionary has a size of 4096 (256 possible 8-bit values, each having
+ * 4 possible positions), and is used to rearrange bytes based on the computed
+ * shuffle pattern. The output is used for SIMD operations that require
+ * specific byte alignment.
+ *
+ * @return A pointer to the shuffle dictionary array.
+ */
+
 inline uint8_t *prepare_match_shuffle_dict()
 {
     uint8_t *dict = new uint8_t[4096];
@@ -451,9 +535,45 @@ static const __m128i *match_shuffle_dict = (__m128i *)prepare_match_shuffle_dict
 
 static const int *byte_check_mask_dict = prepare_byte_check_mask_dict();
 unsigned long long byte_check_cnt[4] = {0, 0, 0, 0};
+/**
+ * @brief Compute the intersection of two sets of packed integers.
+ *
+ * This function intersects two sets of packed integers, stored in @a bases_a and
+ * @a bases_b, and stores the result in @a bases_c. The intersection is computed
+ * using a combination of scalar and SIMD instructions.
+ *
+ * @param bases_a The first set of packed integers.
+ * @param states_a The corresponding states for the first set of packed integers.
+ * @param size_a The size of the first set of packed integers.
+ * @param bases_b The second set of packed integers.
+ * @param states_b The corresponding states for the second set of packed integers.
+ * @param size_b The size of the second set of packed integers.
+ * @param bases_c The output array that will store the intersection of the two sets of packed integers.
+ * @param states_c The corresponding states for the output array.
+ *
+ * @return The size of the intersection.
+ */
 int intersectSetsSIMD(int* bases_a, PackState* states_a, int size_a,
             int* bases_b, PackState* states_b, int size_b,
             int *bases_c, PackState* states_c);
+/**
+ * @brief Compute the intersection of two sets of packed integers.
+ *
+ * This function intersects two sets of packed integers, stored in @a bases_a and
+ * @a bases_b, and stores the result in @a bases_c. The intersection is computed
+ * using a combination of scalar and SIMD instructions.
+ *
+ * @param bases_a The first set of packed integers.
+ * @param states_a The corresponding states for the first set of packed integers.
+ * @param size_a The size of the first set of packed integers.
+ * @param bases_b The second set of packed integers.
+ * @param states_b The corresponding states for the second set of packed integers.
+ * @param size_b The size of the second set of packed integers.
+ * @param bases_c The output array that will store the intersection of the two sets of packed integers.
+ * @param states_c The corresponding states for the output array.
+ *
+ * @return The size of the intersection.
+ */
             int intersectSetsSIMD(int* bases_a, PackState* states_a, int size_a,
                 int* bases_b, PackState* states_b, int size_b,
                 int *bases_c, PackState* states_c)
@@ -569,8 +689,28 @@ int intersectSetsSIMD(int* bases_a, PackState* states_a, int size_a,
     
         return size_c;   
     }
+    /**
+     * Merge a vertex into a set.
+     * 
+     * @param bases_a base address of the set
+     * @param states_a state address of the set
+     * @param size_a current size of the set
+     * @param v_base vertex to be inserted
+     * @param v_bit the bit to be set for the vertex
+     * @return the new size of the set
+     */
 int mergeVertexToSet(int* bases_a, PackState* states_a, int size_a,
             int v_base, PackState v_bit);
+    /**
+     * Merge a vertex into a set.
+     * 
+     * @param bases_a base address of the set
+     * @param states_a state address of the set
+     * @param size_a current size of the set
+     * @param v_base vertex to be inserted
+     * @param v_bit the bit to be set for the vertex
+     * @return the new size of the set
+     */
             int mergeVertexToSet(int* bases_a, PackState* states_a, int size_a,
                 int v_base, PackState v_bit)
     {
@@ -584,10 +724,6 @@ int mergeVertexToSet(int* bases_a, PackState* states_a, int size_a,
         } else if (bases_a[i] == v_base) {
             states_a[i] |= v_bit;
         } else {
-            // for (int j = size_a; j > i; --j) {
-            //     bases_a[j] = bases_a[j - 1];
-            //     states_a[j] = states_a[j - 1];
-            // }
             memmove(bases_a + i + 1, bases_a + i, (size_a - i) * sizeof(int));
             memmove(states_a + i + 1, states_a + i, (size_a - i) * sizeof(PackState));
             bases_a[i] = v_base;
@@ -603,6 +739,17 @@ constexpr int cyclic_shift3 = _MM_SHUFFLE(1, 0, 3, 2);
 
 static const __m128i all_one_si128 = _mm_set_epi32(0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff);
 
+
+/**
+ * Performs a SIMD-optimized intersection of two integer sets and counts the number of common elements.
+ * The function processes the sets in chunks of four using SIMD instructions for efficient comparison.
+ *
+ * @param set_a Pointer to the first integer set.
+ * @param size_a The number of elements in the first set.
+ * @param set_b Pointer to the second integer set.
+ * @param size_b The number of elements in the second set.
+ * @return The count of intersecting elements between set_a and set_b.
+ */
 
 int intersect_filter_simd4x_count(int *set_a, int size_a,
                                   int *set_b, int size_b)
@@ -700,6 +847,41 @@ int intersect_filter_simd4x_count(int *set_a, int size_a,
 
     return res;
 }
+/**
+ * Computes the intersection of two sets of packed integers using SIMD instructions
+ * and counts the number of intersecting elements. This function is optimized to
+ * handle packed integers with associated bit states for each element.
+ *
+ * The function iterates over the sets in chunks of four elements using SIMD
+ * operations, efficiently comparing and counting matches. It utilizes prefetching
+ * and shuffling to minimize cache misses and optimize performance.
+ *
+ * @param bases_a Pointer to the base addresses of the first set of packed integers.
+ * @param states_a Pointer to the states associated with the first set of integers.
+ * @param size_a The number of elements in the first set.
+ * @param bases_b Pointer to the base addresses of the second set of packed integers.
+ * @param states_b Pointer to the states associated with the second set of integers.
+ * @param size_b The number of elements in the second set.
+ * @return The count of intersecting elements between the two sets.
+ */
+
+/**
+ * Computes the intersection of two sets of packed integers using SIMD instructions
+ * and counts the number of intersecting elements. This function is optimized to
+ * handle packed integers with associated bit states for each element.
+ *
+ * The function iterates over the sets in chunks of four elements using SIMD
+ * operations, efficiently comparing and counting matches. It utilizes prefetching
+ * and shuffling to minimize cache misses and optimize performance.
+ *
+ * @param bases_a Pointer to the base addresses of the first set of packed integers.
+ * @param states_a Pointer to the states associated with the first set of integers.
+ * @param size_a The number of elements in the first set.
+ * @param bases_b Pointer to the base addresses of the second set of packed integers.
+ * @param states_b Pointer to the states associated with the second set of integers.
+ * @param size_b The number of elements in the second set.
+ * @return The count of intersecting elements between the two sets.
+ */
 int bp_intersect_filter_simd4x_count(int *bases_a, PackState *states_a, int size_a,
                                      int *bases_b, PackState *states_b, int size_b)
 {
@@ -833,6 +1015,16 @@ int bp_intersect_filter_simd4x_count(int *bases_a, PackState *states_a, int size
     return res;
 }
 
+/**
+ * Merge two sorted arrays into a third array.
+ *
+ * @param set_a the first sorted array
+ * @param size_a the size of the first array
+ * @param set_b the second sorted array
+ * @param size_b the size of the second array
+ * @param set_c the output array
+ * @return the size of the output array
+ */
 int merge(int *set_a, int size_a, int *set_b, int size_b, int *set_c)
 {
     int i = 0, j = 0, size_c = 0;

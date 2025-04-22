@@ -65,6 +65,13 @@ inline void quitWithMessage(const std::string& msg = "[ERROR] Critical failure. 
     std::exit(EXIT_FAILURE);
 }
 
+/**
+ * Allocate memory aligned to a specified alignment.
+ * @param memptr pointer to allocated memory address
+ * @param alignment alignment in bytes
+ * @param size size of memory to allocate
+ * @throws std::runtime_error if memory allocation fails
+ */
 inline void allocateAlignedMemory(void** memptr, size_t alignment, size_t size) {
     if (posix_memalign(memptr, alignment, size) != 0)
         quitWithMessage("[ERROR] Memory alignment failed.");
@@ -85,6 +92,7 @@ inline int getArgumentIndex(char* flag, int argc, char** argv) {
     return -1;
 }
 
+
 inline bool compareEdgePairs(const Edge& a, const Edge& b) {
     return (a.first == b.first) ? a.second < b.second : a.first < b.first;
 }
@@ -104,6 +112,12 @@ inline EdgeVector loadEdgeList(const std::string& filePath) {
     }
     return edges;
 }
+/**
+ * Loads a vertex mapping from a file, where each line contains two space-separated integers "from" and "to", representing a mapping from vertex "from" to vertex "to".
+ *
+ * @param filePath the file path to read the mapping from
+ * @return a vector containing the vertex mapping
+ */
 
 inline std::vector<int> loadVertexMapping(const std::string& filePath) {
     std::ifstream file(filePath);
@@ -123,12 +137,26 @@ inline std::vector<int> loadVertexMapping(const std::string& filePath) {
     return mapping;
 }
 
+
+/**
+ * Writes an edge list to a file, with each line containing two space-separated integers, representing a directed edge from the first integer to the second integer.
+ *
+ * @param filePath the file path to write the edge list to
+ * @param edges the edge list to write, given as a vector of pairs of integers
+ */
 inline void saveEdgeList(const std::string& filePath, const EdgeVector& edges) {
     std::ofstream file(filePath);
     if (!file) quitWithMessage("[ERROR] Failed to write edge list to: " + filePath);
     for (const auto& [u, v] : edges)
         file << u << ' ' << v << '\n';
 }
+/**
+ * Writes a vertex mapping to a file, with each line containing the "from"
+ * vertex index and the corresponding "to" vertex index.
+ *
+ * @param filePath the file path to write the mapping to
+ * @param mapping the vertex mapping as a vector
+ */
 
 inline void saveVertexMapping(const std::string& filePath, const std::vector<int>& mapping) {
     std::ofstream file(filePath);
